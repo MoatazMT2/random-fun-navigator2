@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Random Fun Navigator — Supercharged</title>
+<style>
+:root{--card-bg:rgba(255,255,255,0.92);--accent:#00c3ff;--steam:#171a21;--roblox:#ff4747;--ui-font:'Comic Sans MS','Segoe UI',sans-serif}
+html,body{height:100%;margin:0;padding:0}
+body{font-family:var(--ui-font);overflow:hidden}
+#bgCanvas{position:fixed;left:0;top:0;width:100%;height:100%;z-index:0}
+.wrap{position:relative;z-index:5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;box-sizing:border-box}
+.panel{display:flex;gap:24px;align-items:flex-start}
+.card{background:var(--card-bg);border-radius:18px;padding:22px;width:420px;box-shadow:0 20px 40px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:12px;align-items:stretch;transform:translateY(0);transition:transform .25s ease}
+.card:hover{transform:translateY(-6px)}
+h1{margin:0;font-size:28px;display:flex;align-items:center;gap:12px}
+.mascot{width:54px;height:54px;border-radius:12px;background:linear-gradient(180deg,#fff 0,#ffd1e8 100%);display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 6px 18px rgba(0,0,0,0.15)}
+.btn-row{display:flex;gap:12px;margin-top:8px}
+button.big{flex:1;padding:14px;border-radius:12px;border:none;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 10px 20px rgba(0,0,0,0.12)}
+button.big:active{transform:translateY(1px)}
+#webBtn{background:var(--accent);color:#003}
+#steamBtn{background:var(--steam);color:#cceeff}
+#robloxBtn{background:var(--roblox);color:#fff}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{background:#fff7;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid rgba(0,0,0,0.06);cursor:pointer}
+.progress-wrap{display:flex;align-items:center;gap:10px;margin-top:6px}
+.progress{height:12px;background:#eee;border-radius:999px;flex:1;overflow:hidden}
+.progress>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#ffd86f,#ff8bac)}
+.counter{min-width:46px;text-align:center}
+.widgets{width:320px;display:flex;flex-direction:column;gap:12px}
+.widget{background:var(--card-bg);padding:14px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.12)}
+.widget h3{margin:0 0 8px 0;font-size:15px}
+.list{max-height:180px;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:8px}
+.list .item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(0,0,0,0.03)}
+.small-btn{padding:6px 8px;border-radius:8px;border:none;cursor:pointer}
+.hint{font-size:12px;color:#444}
+.snd-row{display:flex;gap:8px}
+.snd{padding:8px;border-radius:8px;border:none;cursor:pointer}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.96);background:var(--card-bg);padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.35);z-index:12;display:none}
+.modal.open{display:block}
+#confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2}
+@media(max-width:880px){.panel{flex-direction:column;align-items:center}.widgets{width:100%}.card{width:92vw}}
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="wrap">
+  <div class="panel">
+    <div class="card" aria-label="Main actions">
+      <h1>
+        <div class="mascot" id="mascot">:)</div>
+        Random Fun Navigator
+      </h1>
+      <div class="btn-row">
+        <button class="big" id="webBtn" title="Open a random popular website (shortcut: W)">🌐 Random Website</button>
+        <button class="big" id="steamBtn" title="Open a random Steam game (shortcut: S)">🔫 Random Steam</button>
+        <button class="big" id="robloxBtn" title="Open a random Roblox game (shortcut: R)">🧱 Random Roblox</button>
+      </div>
+      <div class="controls">
+        <div class="chip" id="shuffleAll" title="Open one random from each category at once">🔀 Shuffle All</div>
+        <div class="chip" id="copyBtn" title="Copy the last selected random link">📋 Copy Link</div>
+        <div class="chip" id="favBtn" title="Favorite the last opened link">⭐ Favorite</div>
+        <div class="chip" id="fullscreen" title="Toggle fullscreen">⛶ Fullscreen</div>
+        <div class="chip" id="shareBtn" title="Share this page (if supported)">🔗 Share</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress" title="Click progress"><i id="progressBar"></i></div>
+        <div class="counter" id="clickCounter">0</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <label class="hint">SFX</label>
+        <input type="checkbox" id="sfxToggle" checked />
+        <label class="hint">Vol</label>
+        <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" />
+        <label class="hint">Auto</label>
+        <input type="checkbox" id="autoToggle" />
+        <input id="autoInterval" type="number" min="3" max="60" value="8" style="width:72px" title="Seconds between auto opens" />
+        <select id="themeSelect" title="Switch UI theme"><option value="cartoon">Cartoon</option><option value="retro">Retro</option><option value="dark">Dark</option></select>
+      </div>
+      <div style="margin-top:10px">
+        <div class="hint">Soundboard</div>
+        <div class="snd-row">
+          <button class="snd" data-snd="click">🔘 Click</button>
+          <button class="snd" data-snd="cash">💰 Cash</button>
+          <button class="snd" data-snd="oof">💥 OOF</button>
+          <button class="snd" data-snd="special">✨ Special</button>
+        </div>
+      </div>
+    </div>
+    <div class="widgets">
+      <div class="widget">
+        <h3>History (last 20)</h3>
+        <div class="list" id="historyList">—</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="small-btn" id="clearHistory">Clear</button><button class="small-btn" id="openLast">Open Last</button></div>
+      </div>
+      <div class="widget">
+        <h3>Favorites</h3>
+        <div class="list" id="favList">—</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="small-btn" id="exportFav">Export</button><button class="small-btn" id="importFav">Import</button></div>
+      </div>
+      <div class="widget">
+        <h3>Tips & Help</h3>
+        <div class="hint">Keyboard: W (web), S (steam), R (roblox). Try the Konami code for a surprise.</div>
+        <div style="margin-top:8px;display:flex;gap:8px"><button class="small-btn" id="helpBtn">Help</button><button class="small-btn" id="randomBg">Random BG</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+<div class="modal" id="modal"><h3>How to use</h3><div style="max-height:320px;overflow:auto"><p>Press the big buttons to open random links. Use Shuffle All to open one of each. You can favorite links, view history and use keyboard shortcuts.</p><p>Auto mode will open a random category at the interval you choose (in seconds).</p></div><div style="text-align:right;margin-top:8px"><button id="closeModal">Close</button></div></div>
+<audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-29.mp3" preload="auto"></audio>
+<audio id="cashSound" src="https://www.myinstants.com/media/sounds/cash.mp3" preload="auto"></audio>
+<audio id="oofSound" src="https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3" preload="auto"></audio>
+<audio id="specialSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+const websites=['https://www.google.com','https://www.youtube.com','https://www.wikipedia.org','https://www.reddit.com','https://www.twitter.com','https://www.instagram.com','https://www.facebook.com'];
+const steamGames=['https://store.steampowered.com/app/730/CounterStrike_Global_Offensive/','https://store.steampowered.com/app/570/Dota_2/','https://store.steampowered.com/app/271590/Grand_Theft_Auto_V/','https://store.steampowered.com/app/440/Team_Fortress_2/','https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/'];
+const robloxGames=['https://www.roblox.com/games/2753915549/Blox-Fruits','https://www.roblox.com/games/606849621/Jailbreak','https://www.roblox.com/games/286090429/Arsenal','https://www.roblox.com/games/142823291/Murder-Mystery-2','https://www.roblox.com/games/6872265039/DOORS'];
+function choice(arr){return arr[Math.floor(Math.random()*arr.length)]}
+const sfxToggle=document.getElementById('sfxToggle');
+const volEl=document.getElementById('vol');
+function playSound(el){if(!sfxToggle.checked) return;el.volume=Number(volEl.value||0.9);try{el.currentTime=0}catch(e){}el.play().catch(()=>{})}
+const LS_HISTORY='rf_history_v1';
+const LS_FAV='rf_fav_v1';
+async function safeCopyText(text){if(!text) return Promise.reject('no text');if(navigator.clipboard && navigator.clipboard.writeText){try{return await navigator.clipboard.writeText(text)}catch(e){} }try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,ta.value.length);const ok=document.execCommand && document.execCommand('copy');document.body.removeChild(ta);if(ok) return Promise.resolve();}catch(e){}prompt('Copy this text (Ctrl/Cmd+C):',text);return Promise.resolve()}
+function saveHistory(url){if(!url) return;let hist=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]');hist.unshift({url,when:Date.now()});hist=hist.slice(0,20);localStorage.setItem(LS_HISTORY,JSON.stringify(hist));renderHistory()}
+function renderHistory(){const wrap=document.getElementById('historyList');let hist=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]');wrap.innerHTML='';if(!hist.length){wrap.innerHTML='—';return}hist.forEach(h=>{const el=document.createElement('div');el.className='item';const t=document.createElement('div');t.style.flex='1';t.style.fontSize='13px';t.textContent=h.url;const open=document.createElement('button');open.className='small-btn';open.textContent='Open';open.onclick=()=>window.open(h.url,'_blank');const cp=document.createElement('button');cp.className='small-btn';cp.textContent='Copy';cp.onclick=()=>{safeCopyText(h.url).then(()=>toast('Copied')).catch(()=>toast('Could not copy'))};el.appendChild(t);el.appendChild(open);el.appendChild(cp);wrap.appendChild(el)})}
+function saveFav(url){if(!url) return;let fav=JSON.parse(localStorage.getItem(LS_FAV)||'[]');if(!fav.includes(url)) fav.unshift(url);localStorage.setItem(LS_FAV,JSON.stringify(fav.slice(0,50)));renderFav()}
+function renderFav(){const wrap=document.getElementById('favList');let fav=JSON.parse(localStorage.getItem(LS_FAV)||'[]');wrap.innerHTML='';if(!fav.length){wrap.innerHTML='—';return}fav.forEach(u=>{const it=document.createElement('div');it.className='item';const t=document.createElement('div');t.style.flex='1';t.textContent=u;const open=document.createElement('button');open.className='small-btn';open.textContent='Open';open.onclick=()=>window.open(u,'_blank');const rem=document.createElement('button');rem.className='small-btn';rem.textContent='Remove';rem.onclick=()=>{localStorage.setItem(LS_FAV,JSON.stringify(JSON.parse(localStorage.getItem(LS_FAV)||'[]').filter(x=>x!==u)));renderFav()};it.appendChild(t);it.appendChild(open);it.appendChild(rem);wrap.appendChild(it)})}
+let lastOpened=null;
+function openRandom(kind){let url;if(kind==='web') url=choice(websites);if(kind==='steam') url=choice(steamGames);if(kind==='roblox') url=choice(robloxGames);if(!url) return;if(kind==='web') playSound(document.getElementById('clickSound'));if(kind==='steam') playSound(document.getElementById('cashSound'));if(kind==='roblox') playSound(document.getElementById('oofSound'));try{window.open(url,'_blank')}catch(e){}spawnConfetti();cheerMascot();incrementCounter();lastOpened=url;saveHistory(url)}
+function shuffleAll(){openRandom('web');setTimeout(()=>openRandom('steam'),600);setTimeout(()=>openRandom('roblox'),1200)}
+async function copyLast(){if(!lastOpened){toast('No link yet');return}try{await safeCopyText(lastOpened);toast('Copied!')}catch(e){toast('Could not copy')}}
+let counter=Number(localStorage.getItem('rf_clicks')||0);
+function incrementCounter(){counter++;localStorage.setItem('rf_clicks',counter);document.getElementById('clickCounter').textContent=counter;updateProgress()}
+function updateProgress(){const bar=document.getElementById('progressBar');const pct=Math.min(100,(counter%50)/50*100);bar.style.width=pct+'%'}
+function toggleFull(){if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{})}
+function doShare(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(()=>{})} else {safeCopyText(location.href).then(()=>toast('URL copied to clipboard')).catch(()=>toast('Could not copy'))}}
+function randomBGPalette(){const a=['#ff9a9e','#fad0c4','#fbc2eb','#a6c1ee','#c1ffd7','#ffd1a6'];const b=a.slice().sort(()=>0.5-Math.random()).slice(0,4);document.body.style.background=`linear-gradient(270deg, ${b.join(',')})`}
+function applyTheme(name){if(name==='dark'){document.documentElement.style.setProperty('--card-bg','rgba(16,16,16,0.9)');document.documentElement.style.setProperty('--accent','#6bd3ff')}else if(name==='retro'){document.documentElement.style.setProperty('--card-bg','rgba(255,249,230,0.98)');document.documentElement.style.setProperty('--accent','#ff6f91')}else{document.documentElement.style.setProperty('--card-bg','rgba(255,255,255,0.92)');document.documentElement.style.setProperty('--accent','#00c3ff')}}
+const confettiCanvas=document.getElementById('confetti');const cctx=confettiCanvas.getContext('2d');let confettiParticles=[];function resizeConfetti(){const d=window.devicePixelRatio||1;confettiCanvas.width=Math.floor(innerWidth*d);confettiCanvas.height=Math.floor(innerHeight*d);confettiCanvas.style.width=innerWidth+'px';confettiCanvas.style.height=innerHeight+'px';cctx.setTransform(d,0,0,d,0,0)}resizeConfetti();window.addEventListener('resize',resizeConfetti);
+function spawnConfetti(x=innerWidth/2,y=innerHeight/4){const colors=['#ff6b6b','#ffd86f','#6bffb8','#6bb3ff','#d86bff'];for(let i=0;i<28;i++){confettiParticles.push({x:x+(Math.random()-0.5)*200,y:y+(Math.random()-0.5)*80,vx:(Math.random()-0.5)*8,vy:(Math.random()*-6)-2,life:80+Math.random()*40,size:6+Math.random()*8,color:colors[Math.floor(Math.random()*colors.length)],rot:Math.random()*360,vr:(Math.random()-0.5)*10})}}
+function confettiLoop(){cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);for(let i=confettiParticles.length-1;i>=0;i--){const p=confettiParticles[i];p.vy+=0.25;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--;cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.rot*Math.PI/180);cctx.fillStyle=p.color;cctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);cctx.restore();if(p.y>innerHeight+100||p.life<=0)confettiParticles.splice(i,1)}requestAnimationFrame(confettiLoop)}confettiLoop();
+const bg=document.getElementById('bgCanvas');const gctx=bg.getContext('2d');let blobs=[];function resizeBg(){const d=window.devicePixelRatio||1;bg.width=Math.floor(innerWidth*d);bg.height=Math.floor(innerHeight*d);bg.style.width=innerWidth+'px';bg.style.height=innerHeight+'px';gctx.setTransform(d,0,0,d,0,0)}resizeBg();window.addEventListener('resize',resizeBg);for(let i=0;i<20;i++)blobs.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:30+Math.random()*110,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3,h:Math.random()*360});function drawSoftCircle(x,y,r,h,alpha){gctx.beginPath();gctx.fillStyle=`hsla(${h},80%,65%,${alpha})`;gctx.arc(x,y,r,0,Math.PI*2);gctx.fill()}function bgLoop(){gctx.clearRect(0,0,bg.width,bg.height);blobs.forEach(b=>{b.x+=b.dx;b.y+=b.dy;if(b.x<-200)b.x=bg.width+200;if(b.x>bg.width+200)b.x=-200;if(b.y<-200)b.y=bg.height+200;if(b.y>bg.height+200)b.y=-200;for(let a=1;a>=0.2;a-=0.12)drawSoftCircle(b.x,b.y,b.r*(a+0.1),b.h,a*0.12)});requestAnimationFrame(bgLoop)}bgLoop();
+function cheerMascot(){const m=document.getElementById('mascot');const old=m.textContent;m.textContent='🎉';setTimeout(()=>m.textContent=old,700)}
+document.querySelectorAll('.snd').forEach(btn=>{btn.addEventListener('click',()=>{const s=btn.dataset.snd;if(s==='click')playSound(document.getElementById('clickSound'));if(s==='cash')playSound(document.getElementById('cashSound'));if(s==='oof')playSound(document.getElementById('oofSound'));if(s==='special')playSound(document.getElementById('specialSound'))})});
+document.getElementById('webBtn').addEventListener('click',()=>openRandom('web'));
+document.getElementById('steamBtn').addEventListener('click',()=>openRandom('steam'));
+document.getElementById('robloxBtn').addEventListener('click',()=>openRandom('roblox'));
+document.getElementById('shuffleAll').addEventListener('click',shuffleAll);
+document.getElementById('copyBtn').addEventListener('click',()=>{copyLast()});
+document.getElementById('favBtn').addEventListener('click',()=>{if(lastOpened){saveFav(lastOpened);toast('Favorited!')}});
+document.getElementById('clearHistory').addEventListener('click',()=>{localStorage.removeItem(LS_HISTORY);renderHistory()});
+document.getElementById('openLast').addEventListener('click',()=>{const h=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]')[0];if(h)window.open(h.url,'_blank')});
+document.getElementById('exportFav').addEventListener('click',()=>{const f=localStorage.getItem(LS_FAV)||'[]';safeCopyText(f).then(()=>toast('Favorites copied as JSON')).catch(()=>toast('Could not copy'))});
+document.getElementById('importFav').addEventListener('click',()=>{const txt=prompt('Paste favorites JSON here');try{const arr=JSON.parse(txt);if(Array.isArray(arr))localStorage.setItem(LS_FAV,JSON.stringify(arr));renderFav();toast('Imported')}catch(e){alert('Invalid JSON')}});
+document.getElementById('fullscreen').addEventListener('click',toggleFull);document.getElementById('shareBtn').addEventListener('click',doShare);document.getElementById('randomBg').addEventListener('click',randomBGPalette);document.getElementById('helpBtn').addEventListener('click',()=>document.getElementById('modal').classList.add('open'));document.getElementById('closeModal').addEventListener('click',()=>document.getElementById('modal').classList.remove('open'));
+document.getElementById('themeSelect').addEventListener('change',e=>applyTheme(e.target.value));
+let autoTimer=null;document.getElementById('autoToggle').addEventListener('change',e=>{if(e.target.checked){clearInterval(autoTimer);const sec=Number(document.getElementById('autoInterval').value)||8;autoTimer=setInterval(()=>{const k=['web','steam','roblox'][Math.floor(Math.random()*3)];openRandom(k)},sec*1000)}else{clearInterval(autoTimer);autoTimer=null}});
+renderHistory();renderFav();document.getElementById('clickCounter').textContent=counter;updateProgress();
+const konami=[38,38,40,40,37,39,37,39,66,65];let konamiBuf=[];document.addEventListener('keydown',e=>{const tag=(document.activeElement||{}).tagName;if(tag==='INPUT'||tag==='TEXTAREA')return;if(e.key.toLowerCase()==='w')openRandom('web');if(e.key.toLowerCase()==='s')openRandom('steam');if(e.key.toLowerCase()==='r')openRandom('roblox');konamiBuf.push(e.keyCode);if(konamiBuf.length>konami.length)konamiBuf.shift();if(konamiBuf.join(',')===konami.join(',')){spawnConfetti(innerWidth/2,innerHeight/2);playSound(document.getElementById('specialSound'));document.getElementById('mascot').textContent='💫';toast('Konami unlocked!')}});
+let toastEl=null;function toast(txt,ms=1200){if(toastEl)document.body.removeChild(toastEl);toastEl=document.createElement('div');toastEl.style.position='fixed';toastEl.style.left='50%';toastEl.style.bottom='8%';toastEl.style.transform='translateX(-50%)';toastEl.style.background='rgba(0,0,0,0.8)';toastEl.style.color='white';toastEl.style.padding='8px 14px';toastEl.style.borderRadius='8px';toastEl.style.zIndex=20;toastEl.textContent=txt;document.body.appendChild(toastEl);setTimeout(()=>{if(toastEl){document.body.removeChild(toastEl);toastEl=null}},ms)}
+});
+</script>
+</body>
+</html>
