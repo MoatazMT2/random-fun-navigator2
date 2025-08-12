@@ -14,7 +14,8 @@ body{font-family:var(--ui-font);overflow:hidden}
 .card{background:var(--card-bg);border-radius:18px;padding:22px;width:420px;box-shadow:0 20px 40px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:12px;align-items:stretch;transform:translateY(0);transition:transform .25s ease}
 .card:hover{transform:translateY(-6px)}
 h1{margin:0;font-size:28px;display:flex;align-items:center;gap:12px}
-.mascot{width:54px;height:54px;border-radius:12px;background:linear-gradient(180deg,#fff 0,#ffd1e8 100%);display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 6px 18px rgba(0,0,0,0.15)}
+.mascot{width:54px;height:54px;border-radius:12px;background:linear-gradient(180deg,#fff 0,#ffd1e8 100%);display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 6px 18px rgba(0,0,0,0.15);cursor:pointer;user-select:none;position:relative}
+.mascot-bubble{position:absolute;left:70px;top:0;background:rgba(0,0,0,0.8);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;display:none;z-index:90}
 .btn-row{display:flex;gap:12px;margin-top:8px}
 button.big{flex:1;padding:14px;border-radius:12px;border:none;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 10px 20px rgba(0,0,0,0.12)}
 button.big:active{transform:translateY(1px)}
@@ -36,10 +37,24 @@ button.big:active{transform:translateY(1px)}
 .hint{font-size:12px;color:#444}
 .snd-row{display:flex;gap:8px}
 .snd{padding:8px;border-radius:8px;border:none;cursor:pointer}
-.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.96);background:var(--card-bg);padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.35);z-index:12;display:none}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.96);background:var(--card-bg);padding:18px;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.35);z-index:50;display:none;max-width:92vw;max-height:92vh;overflow:auto}
 .modal.open{display:block}
 #confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2}
-@media(max-width:880px){.panel{flex-direction:column;align-items:center}.widgets{width:100%}.card{width:92vw}}
+#miniTimer{position:fixed;right:18px;bottom:18px;background:rgba(0,0,0,0.6);color:#fff;padding:8px 10px;border-radius:10px;z-index:60;font-size:13px}
+/* Neon glow for dark theme */
+.dark-glow button.big{box-shadow:0 10px 30px rgba(107,211,255,0.2),0 0 14px rgba(107,211,255,0.12) inset}
+.pixel-room{width:640px;height:360px;background:repeating-linear-gradient(45deg,#222 0 2px,#111 2px 4px);color:#fff;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pixel-room h2{margin:0 0 12px 0}
+/* party spin */
+@keyframes spinny{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.mascot.party{animation:spinny .8s linear 6}
+/* Konami confetti tweaks */
+.konami-badge{position:fixed;left:12px;top:12px;background:#000;color:#fff;padding:6px 10px;border-radius:8px;z-index:60}
+/* glitch */
+.glitch{animation:glitch 0.5s;}
+@keyframes glitch{0%{filter: none}50%{filter: contrast(2) hue-rotate(20deg) blur(1px)}100%{filter:none}}
+/* responsive */
+@media(max-width:880px){.panel{flex-direction:column;align-items:center}.widgets{width:100%}.card{width:92vw}.pixel-room{width:90vw;height:50vh}}
 </style>
 </head>
 <body>
@@ -48,7 +63,9 @@ button.big:active{transform:translateY(1px)}
   <div class="panel">
     <div class="card" aria-label="Main actions">
       <h1>
-        <div class="mascot" id="mascot">:)</div>
+        <div class="mascot" id="mascot">:)
+          <div class="mascot-bubble" id="mascotBubble">Hello!</div>
+        </div>
         Random Fun Navigator
       </h1>
       <div class="btn-row">
@@ -75,7 +92,7 @@ button.big:active{transform:translateY(1px)}
         <label class="hint">Auto</label>
         <input type="checkbox" id="autoToggle" />
         <input id="autoInterval" type="number" min="3" max="60" value="8" style="width:72px" title="Seconds between auto opens" />
-        <select id="themeSelect" title="Switch UI theme"><option value="cartoon">Cartoon</option><option value="retro">Retro</option><option value="dark">Dark</option></select>
+        <select id="themeSelect" title="Switch UI theme"><option value="cartoon">Cartoon</option><option value="retro">Retro</option><option value="dark">Dark</option><option value="neon">Neon</option><option value="cyber">Cyber</option></select>
       </div>
       <div style="margin-top:10px">
         <div class="hint">Soundboard</div>
@@ -85,6 +102,16 @@ button.big:active{transform:translateY(1px)}
           <button class="snd" data-snd="oof">💥 OOF</button>
           <button class="snd" data-snd="special">✨ Special</button>
         </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="hint">Quote</div>
+        <div id="quoteBox" style="font-size:13px;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;min-height:40px">Loading...</div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="small-btn" id="speedrunBtn">⏱ Speedrun</button>
+        <button class="small-btn" id="achieveBtn">🏆 Badges</button>
+        <button class="small-btn" id="ambientToggle">🎵 Ambient</button>
+        <button class="small-btn" id="rouletteBtn">🎰 Roulette</button>
       </div>
     </div>
     <div class="widgets">
@@ -99,69 +126,283 @@ button.big:active{transform:translateY(1px)}
         <div style="display:flex;gap:8px;margin-top:8px"><button class="small-btn" id="exportFav">Export</button><button class="small-btn" id="importFav">Import</button></div>
       </div>
       <div class="widget">
+        <h3>Custom Pools</h3>
+        <div style="font-size:13px;color:#444;margin-bottom:8px">Add your own links for each category</div>
+        <input id="customInput" placeholder="https://example.com" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px" />
+        <div style="display:flex;gap:8px"><button class="small-btn" id="addWeb">Add Web</button><button class="small-btn" id="addSteam">Add Steam</button><button class="small-btn" id="addRoblox">Add Roblox</button></div>
+        <div style="margin-top:8px;display:flex;gap:8px"><button class="small-btn" id="viewPools">View Pools</button><button class="small-btn" id="clearPools">Clear Pools</button></div>
+      </div>
+      <div class="widget">
         <h3>Tips & Help</h3>
-        <div class="hint">Keyboard: W (web), S (steam), R (roblox). Try the Konami code for a surprise.</div>
+        <div class="hint">Keyboard: W (web), S (steam), R (roblox). Try the Konami code for a surprise. Type <code>partytime</code>, <code>dimc467</code> or <code>debugmode</code> to unlock things.</div>
         <div style="margin-top:8px;display:flex;gap:8px"><button class="small-btn" id="helpBtn">Help</button><button class="small-btn" id="randomBg">Random BG</button></div>
       </div>
     </div>
   </div>
 </div>
 <canvas id="confetti"></canvas>
-<div class="modal" id="modal"><h3>How to use</h3><div style="max-height:320px;overflow:auto"><p>Press the big buttons to open random links. Use Shuffle All to open one of each. You can favorite links, view history and use keyboard shortcuts.</p><p>Auto mode will open a random category at the interval you choose (in seconds).</p></div><div style="text-align:right;margin-top:8px"><button id="closeModal">Close</button></div></div>
+<div id="miniTimer">Last click: --:--:--</div>
+<!-- Modals -->
+<div class="modal" id="modal"><h3>How to use</h3><div style="max-height:320px;overflow:auto"><p>Press the big buttons to open random links. Use Shuffle All to open one of each. You can favorite links, view history and use keyboard shortcuts.</p><p>Auto mode will open a random category at the interval you choose (in seconds). Click the mascot 10x for a secret. Type <code>partytime</code> to spin the mascot.</p></div><div style="text-align:right;margin-top:8px"><button id="closeModal">Close</button></div></div>
+<div class="modal" id="pixelModal"><div class="pixel-room" id="pixelRoom"><h2>Retro Game Room</h2><div style="display:flex;gap:8px"><a href="https://www.retrogames.cc" target="_blank" class="small-btn">Play</a><button class="small-btn" id="exitPixel">Exit</button></div></div></div>
+<div class="modal" id="miniGameModal"><h3>Mini Game — Bouncy</h3><canvas id="miniGameCanvas" width="480" height="240" style="background:#111;border-radius:8px;display:block;margin:8px 0"></canvas><div style="text-align:right"><button id="closeMiniGame">Close</button></div></div>
+<div class="modal" id="rouletteModal"><h3>Link Roulette</h3><div id="rouletteArea" style="height:140px;display:flex;align-items:center;justify-content:center;font-size:18px">Spin the wheel!</div><div style="text-align:right;margin-top:8px"><button id="spinBtn" class="small-btn">Spin</button><button id="closeRoulette" class="small-btn">Close</button></div></div>
+<div class="modal" id="achieveModal"><h3>Achievements</h3><div id="achieveArea" style="min-height:100px"></div><div style="text-align:right;margin-top:8px"><button id="closeAchieve" class="small-btn">Close</button></div></div>
+<div class="modal" id="adminModal"><h3>Admin Panel (debugmode)</h3><div style="font-size:13px">Adjust rare-chance and view pools. (Local only)</div><div style="margin-top:8px"><label>Rickroll %: <input id="adminRick" type="number" min="0" max="50" value="1" style="width:60px"/>%</label></div><div style="text-align:right;margin-top:8px"><button id="closeAdmin" class="small-btn">Close</button></div></div>
+<!-- Audio -->
 <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-29.mp3" preload="auto"></audio>
 <audio id="cashSound" src="https://www.myinstants.com/media/sounds/cash.mp3" preload="auto"></audio>
 <audio id="oofSound" src="https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3" preload="auto"></audio>
 <audio id="specialSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+<audio id="ambientMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto" loop></audio>
+<!-- hidden rare sfx (short) -->
+<audio id="rare1" src="https://www.soundjay.com/human/sounds/applause-8.mp3" preload="auto"></audio>
+<audio id="rare2" src="https://www.soundjay.com/button/sounds/button-3.mp3" preload="auto"></audio>
 <script>
-document.addEventListener('DOMContentLoaded',function(){
-const websites=['https://www.google.com','https://www.youtube.com','https://www.wikipedia.org','https://www.reddit.com','https://www.twitter.com','https://www.instagram.com','https://www.facebook.com'];
-const steamGames=['https://store.steampowered.com/app/730/CounterStrike_Global_Offensive/','https://store.steampowered.com/app/570/Dota_2/','https://store.steampowered.com/app/271590/Grand_Theft_Auto_V/','https://store.steampowered.com/app/440/Team_Fortress_2/','https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/'];
-const robloxGames=['https://www.roblox.com/games/2753915549/Blox-Fruits','https://www.roblox.com/games/606849621/Jailbreak','https://www.roblox.com/games/286090429/Arsenal','https://www.roblox.com/games/142823291/Murder-Mystery-2','https://www.roblox.com/games/6872265039/DOORS'];
-function choice(arr){return arr[Math.floor(Math.random()*arr.length)]}
-const sfxToggle=document.getElementById('sfxToggle');
-const volEl=document.getElementById('vol');
-function playSound(el){if(!sfxToggle.checked) return;el.volume=Number(volEl.value||0.9);try{el.currentTime=0}catch(e){}el.play().catch(()=>{})}
-const LS_HISTORY='rf_history_v1';
-const LS_FAV='rf_fav_v1';
-async function safeCopyText(text){if(!text) return Promise.reject('no text');if(navigator.clipboard && navigator.clipboard.writeText){try{return await navigator.clipboard.writeText(text)}catch(e){} }try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,ta.value.length);const ok=document.execCommand && document.execCommand('copy');document.body.removeChild(ta);if(ok) return Promise.resolve();}catch(e){}prompt('Copy this text (Ctrl/Cmd+C):',text);return Promise.resolve()}
-function saveHistory(url){if(!url) return;let hist=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]');hist.unshift({url,when:Date.now()});hist=hist.slice(0,20);localStorage.setItem(LS_HISTORY,JSON.stringify(hist));renderHistory()}
-function renderHistory(){const wrap=document.getElementById('historyList');let hist=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]');wrap.innerHTML='';if(!hist.length){wrap.innerHTML='—';return}hist.forEach(h=>{const el=document.createElement('div');el.className='item';const t=document.createElement('div');t.style.flex='1';t.style.fontSize='13px';t.textContent=h.url;const open=document.createElement('button');open.className='small-btn';open.textContent='Open';open.onclick=()=>window.open(h.url,'_blank');const cp=document.createElement('button');cp.className='small-btn';cp.textContent='Copy';cp.onclick=()=>{safeCopyText(h.url).then(()=>toast('Copied')).catch(()=>toast('Could not copy'))};el.appendChild(t);el.appendChild(open);el.appendChild(cp);wrap.appendChild(el)})}
-function saveFav(url){if(!url) return;let fav=JSON.parse(localStorage.getItem(LS_FAV)||'[]');if(!fav.includes(url)) fav.unshift(url);localStorage.setItem(LS_FAV,JSON.stringify(fav.slice(0,50)));renderFav()}
-function renderFav(){const wrap=document.getElementById('favList');let fav=JSON.parse(localStorage.getItem(LS_FAV)||'[]');wrap.innerHTML='';if(!fav.length){wrap.innerHTML='—';return}fav.forEach(u=>{const it=document.createElement('div');it.className='item';const t=document.createElement('div');t.style.flex='1';t.textContent=u;const open=document.createElement('button');open.className='small-btn';open.textContent='Open';open.onclick=()=>window.open(u,'_blank');const rem=document.createElement('button');rem.className='small-btn';rem.textContent='Remove';rem.onclick=()=>{localStorage.setItem(LS_FAV,JSON.stringify(JSON.parse(localStorage.getItem(LS_FAV)||'[]').filter(x=>x!==u)));renderFav()};it.appendChild(t);it.appendChild(open);it.appendChild(rem);wrap.appendChild(it)})}
-let lastOpened=null;
-function openRandom(kind){let url;if(kind==='web') url=choice(websites);if(kind==='steam') url=choice(steamGames);if(kind==='roblox') url=choice(robloxGames);if(!url) return;if(kind==='web') playSound(document.getElementById('clickSound'));if(kind==='steam') playSound(document.getElementById('cashSound'));if(kind==='roblox') playSound(document.getElementById('oofSound'));try{window.open(url,'_blank')}catch(e){}spawnConfetti();cheerMascot();incrementCounter();lastOpened=url;saveHistory(url)}
-function shuffleAll(){openRandom('web');setTimeout(()=>openRandom('steam'),600);setTimeout(()=>openRandom('roblox'),1200)}
-async function copyLast(){if(!lastOpened){toast('No link yet');return}try{await safeCopyText(lastOpened);toast('Copied!')}catch(e){toast('Could not copy')}}
-let counter=Number(localStorage.getItem('rf_clicks')||0);
-function incrementCounter(){counter++;localStorage.setItem('rf_clicks',counter);document.getElementById('clickCounter').textContent=counter;updateProgress()}
-function updateProgress(){const bar=document.getElementById('progressBar');const pct=Math.min(100,(counter%50)/50*100);bar.style.width=pct+'%'}
-function toggleFull(){if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{})}
-function doShare(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(()=>{})} else {safeCopyText(location.href).then(()=>toast('URL copied to clipboard')).catch(()=>toast('Could not copy'))}}
-function randomBGPalette(){const a=['#ff9a9e','#fad0c4','#fbc2eb','#a6c1ee','#c1ffd7','#ffd1a6'];const b=a.slice().sort(()=>0.5-Math.random()).slice(0,4);document.body.style.background=`linear-gradient(270deg, ${b.join(',')})`}
-function applyTheme(name){if(name==='dark'){document.documentElement.style.setProperty('--card-bg','rgba(16,16,16,0.9)');document.documentElement.style.setProperty('--accent','#6bd3ff')}else if(name==='retro'){document.documentElement.style.setProperty('--card-bg','rgba(255,249,230,0.98)');document.documentElement.style.setProperty('--accent','#ff6f91')}else{document.documentElement.style.setProperty('--card-bg','rgba(255,255,255,0.92)');document.documentElement.style.setProperty('--accent','#00c3ff')}}
-const confettiCanvas=document.getElementById('confetti');const cctx=confettiCanvas.getContext('2d');let confettiParticles=[];function resizeConfetti(){const d=window.devicePixelRatio||1;confettiCanvas.width=Math.floor(innerWidth*d);confettiCanvas.height=Math.floor(innerHeight*d);confettiCanvas.style.width=innerWidth+'px';confettiCanvas.style.height=innerHeight+'px';cctx.setTransform(d,0,0,d,0,0)}resizeConfetti();window.addEventListener('resize',resizeConfetti);
-function spawnConfetti(x=innerWidth/2,y=innerHeight/4){const colors=['#ff6b6b','#ffd86f','#6bffb8','#6bb3ff','#d86bff'];for(let i=0;i<28;i++){confettiParticles.push({x:x+(Math.random()-0.5)*200,y:y+(Math.random()-0.5)*80,vx:(Math.random()-0.5)*8,vy:(Math.random()*-6)-2,life:80+Math.random()*40,size:6+Math.random()*8,color:colors[Math.floor(Math.random()*colors.length)],rot:Math.random()*360,vr:(Math.random()-0.5)*10})}}
-function confettiLoop(){cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);for(let i=confettiParticles.length-1;i>=0;i--){const p=confettiParticles[i];p.vy+=0.25;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--;cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.rot*Math.PI/180);cctx.fillStyle=p.color;cctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);cctx.restore();if(p.y>innerHeight+100||p.life<=0)confettiParticles.splice(i,1)}requestAnimationFrame(confettiLoop)}confettiLoop();
-const bg=document.getElementById('bgCanvas');const gctx=bg.getContext('2d');let blobs=[];function resizeBg(){const d=window.devicePixelRatio||1;bg.width=Math.floor(innerWidth*d);bg.height=Math.floor(innerHeight*d);bg.style.width=innerWidth+'px';bg.style.height=innerHeight+'px';gctx.setTransform(d,0,0,d,0,0)}resizeBg();window.addEventListener('resize',resizeBg);for(let i=0;i<20;i++)blobs.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:30+Math.random()*110,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3,h:Math.random()*360});function drawSoftCircle(x,y,r,h,alpha){gctx.beginPath();gctx.fillStyle=`hsla(${h},80%,65%,${alpha})`;gctx.arc(x,y,r,0,Math.PI*2);gctx.fill()}function bgLoop(){gctx.clearRect(0,0,bg.width,bg.height);blobs.forEach(b=>{b.x+=b.dx;b.y+=b.dy;if(b.x<-200)b.x=bg.width+200;if(b.x>bg.width+200)b.x=-200;if(b.y<-200)b.y=bg.height+200;if(b.y>bg.height+200)b.y=-200;for(let a=1;a>=0.2;a-=0.12)drawSoftCircle(b.x,b.y,b.r*(a+0.1),b.h,a*0.12)});requestAnimationFrame(bgLoop)}bgLoop();
-function cheerMascot(){const m=document.getElementById('mascot');const old=m.textContent;m.textContent='🎉';setTimeout(()=>m.textContent=old,700)}
-document.querySelectorAll('.snd').forEach(btn=>{btn.addEventListener('click',()=>{const s=btn.dataset.snd;if(s==='click')playSound(document.getElementById('clickSound'));if(s==='cash')playSound(document.getElementById('cashSound'));if(s==='oof')playSound(document.getElementById('oofSound'));if(s==='special')playSound(document.getElementById('specialSound'))})});
-document.getElementById('webBtn').addEventListener('click',()=>openRandom('web'));
-document.getElementById('steamBtn').addEventListener('click',()=>openRandom('steam'));
-document.getElementById('robloxBtn').addEventListener('click',()=>openRandom('roblox'));
-document.getElementById('shuffleAll').addEventListener('click',shuffleAll);
-document.getElementById('copyBtn').addEventListener('click',()=>{copyLast()});
-document.getElementById('favBtn').addEventListener('click',()=>{if(lastOpened){saveFav(lastOpened);toast('Favorited!')}});
-document.getElementById('clearHistory').addEventListener('click',()=>{localStorage.removeItem(LS_HISTORY);renderHistory()});
-document.getElementById('openLast').addEventListener('click',()=>{const h=JSON.parse(localStorage.getItem(LS_HISTORY)||'[]')[0];if(h)window.open(h.url,'_blank')});
-document.getElementById('exportFav').addEventListener('click',()=>{const f=localStorage.getItem(LS_FAV)||'[]';safeCopyText(f).then(()=>toast('Favorites copied as JSON')).catch(()=>toast('Could not copy'))});
-document.getElementById('importFav').addEventListener('click',()=>{const txt=prompt('Paste favorites JSON here');try{const arr=JSON.parse(txt);if(Array.isArray(arr))localStorage.setItem(LS_FAV,JSON.stringify(arr));renderFav();toast('Imported')}catch(e){alert('Invalid JSON')}});
-document.getElementById('fullscreen').addEventListener('click',toggleFull);document.getElementById('shareBtn').addEventListener('click',doShare);document.getElementById('randomBg').addEventListener('click',randomBGPalette);document.getElementById('helpBtn').addEventListener('click',()=>document.getElementById('modal').classList.add('open'));document.getElementById('closeModal').addEventListener('click',()=>document.getElementById('modal').classList.remove('open'));
-document.getElementById('themeSelect').addEventListener('change',e=>applyTheme(e.target.value));
-let autoTimer=null;document.getElementById('autoToggle').addEventListener('change',e=>{if(e.target.checked){clearInterval(autoTimer);const sec=Number(document.getElementById('autoInterval').value)||8;autoTimer=setInterval(()=>{const k=['web','steam','roblox'][Math.floor(Math.random()*3)];openRandom(k)},sec*1000)}else{clearInterval(autoTimer);autoTimer=null}});
-renderHistory();renderFav();document.getElementById('clickCounter').textContent=counter;updateProgress();
-const konami=[38,38,40,40,37,39,37,39,66,65];let konamiBuf=[];document.addEventListener('keydown',e=>{const tag=(document.activeElement||{}).tagName;if(tag==='INPUT'||tag==='TEXTAREA')return;if(e.key.toLowerCase()==='w')openRandom('web');if(e.key.toLowerCase()==='s')openRandom('steam');if(e.key.toLowerCase()==='r')openRandom('roblox');konamiBuf.push(e.keyCode);if(konamiBuf.length>konami.length)konamiBuf.shift();if(konamiBuf.join(',')===konami.join(',')){spawnConfetti(innerWidth/2,innerHeight/2);playSound(document.getElementById('specialSound'));document.getElementById('mascot').textContent='💫';toast('Konami unlocked!')}});
-let toastEl=null;function toast(txt,ms=1200){if(toastEl)document.body.removeChild(toastEl);toastEl=document.createElement('div');toastEl.style.position='fixed';toastEl.style.left='50%';toastEl.style.bottom='8%';toastEl.style.transform='translateX(-50%)';toastEl.style.background='rgba(0,0,0,0.8)';toastEl.style.color='white';toastEl.style.padding='8px 14px';toastEl.style.borderRadius='8px';toastEl.style.zIndex=20;toastEl.textContent=txt;document.body.appendChild(toastEl);setTimeout(()=>{if(toastEl){document.body.removeChild(toastEl);toastEl=null}},ms)}
-});
+(function(){
+  'use strict';
+  document.addEventListener('DOMContentLoaded',function(){
+    // --- built-in pools ---
+    const defaultWeb=['https://www.google.com','https://www.youtube.com','https://www.wikipedia.org','https://www.reddit.com','https://www.instagram.com'];
+    const defaultSteam=['https://store.steampowered.com/app/730/CounterStrike_Global_Offensive/','https://store.steampowered.com/app/570/Dota_2/','https://store.steampowered.com/app/271590/Grand_Theft_Auto_V/'];
+    const defaultRoblox=['https://www.roblox.com/games/2753915549/Blox-Fruits','https://www.roblox.com/games/606849621/Jailbreak','https://www.roblox.com/games/286090429/Arsenal'];
+
+    // localStorage keys
+    const LS_HISTORY='rf_history_v3';
+    const LS_FAV='rf_fav_v3';
+    const LS_POOLS='rf_pools_v2';
+    const LS_CLICKS='rf_clicks_v2';
+    const LS_DAILY='rf_daily_v2';
+    const LS_BADGES='rf_badges_v1';
+
+    // admin-config defaults
+    let adminConfig = { rickPercent: 1, glitchChance: 0.005, mtCameo: 0.001 };
+
+    // state
+    let pools = JSON.parse(localStorage.getItem(LS_POOLS) || '{}');
+    if(!pools.web) pools.web = [];
+    if(!pools.steam) pools.steam = [];
+    if(!pools.roblox) pools.roblox = [];
+
+    function savePools(){ localStorage.setItem(LS_POOLS, JSON.stringify(pools)); }
+
+    function getPool(kind){
+      if(kind==='web') return pools.web.length ? pools.web.concat(defaultWeb) : defaultWeb;
+      if(kind==='steam') return pools.steam.length ? pools.steam.concat(defaultSteam) : defaultSteam;
+      if(kind==='roblox') return pools.roblox.length ? pools.roblox.concat(defaultRoblox) : defaultRoblox;
+      return [];
+    }
+
+    function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    const sfxToggle = document.getElementById('sfxToggle');
+    const volEl = document.getElementById('vol');
+
+    function playSound(el){ if(!sfxToggle.checked || !el) return; el.volume = Number(volEl.value || 0.9); try{ el.currentTime = 0; } catch(e){} el.play().catch(()=>{}); }
+
+    async function safeCopyText(text){ if(!text) return Promise.reject('no text'); if(navigator.clipboard && navigator.clipboard.writeText){ try{return await navigator.clipboard.writeText(text);}catch(e){} } try{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px'; ta.style.top='0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length); const ok = document.execCommand && document.execCommand('copy'); document.body.removeChild(ta); if(ok) return Promise.resolve(); }catch(e){} prompt('Copy this text (Ctrl/Cmd+C):', text); return Promise.resolve(); }
+
+    // history + fav
+    function saveHistory(url){ if(!url) return; let hist = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]'); hist.unshift({url,when:Date.now()}); hist = hist.slice(0,50); localStorage.setItem(LS_HISTORY, JSON.stringify(hist)); renderHistory(); }
+    function renderHistory(){ const wrap = document.getElementById('historyList'); let hist = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]'); wrap.innerHTML = ''; if(!hist.length){ wrap.innerHTML = '—'; return; } hist.slice(0,20).forEach(h=>{ const el = document.createElement('div'); el.className='item'; const t = document.createElement('div'); t.style.flex='1'; t.style.fontSize='13px'; t.textContent=h.url; const time = document.createElement('div'); time.style.fontSize='11px'; time.style.opacity=0.6; time.textContent = new Date(h.when).toLocaleString(); t.appendChild(time); const open = document.createElement('button'); open.className='small-btn'; open.textContent='Open'; open.onclick = ()=>window.open(h.url,'_blank'); const cp = document.createElement('button'); cp.className='small-btn'; cp.textContent='Copy'; cp.onclick = ()=>{ safeCopyText(h.url).then(()=>toast('Copied')).catch(()=>toast('Could not copy')); }; el.appendChild(t); el.appendChild(open); el.appendChild(cp); wrap.appendChild(el); }); }
+
+    function saveFav(url){ if(!url) return; let fav = JSON.parse(localStorage.getItem(LS_FAV) || '[]'); if(!fav.includes(url)) fav.unshift(url); localStorage.setItem(LS_FAV, JSON.stringify(fav.slice(0,200))); renderFav(); }
+    function renderFav(){ const wrap = document.getElementById('favList'); let fav = JSON.parse(localStorage.getItem(LS_FAV) || '[]'); wrap.innerHTML=''; if(!fav.length){ wrap.innerHTML='—'; return; } fav.forEach(u=>{ const it = document.createElement('div'); it.className='item'; const t = document.createElement('div'); t.style.flex='1'; t.textContent=u; const open = document.createElement('button'); open.className='small-btn'; open.textContent='Open'; open.onclick = ()=>window.open(u,'_blank'); const rem = document.createElement('button'); rem.className='small-btn'; rem.textContent='Remove'; rem.onclick = ()=>{ localStorage.setItem(LS_FAV, JSON.stringify(JSON.parse(localStorage.getItem(LS_FAV)||'[]').filter(x=>x!==u))); renderFav(); }; it.appendChild(t); it.appendChild(open); it.appendChild(rem); wrap.appendChild(it); }); }
+
+    // achievements / badges
+    function getBadges(){ return JSON.parse(localStorage.getItem(LS_BADGES) || '[]'); }
+    function awardBadge(id, title){ let badges = getBadges(); if(!badges.find(b=>b.id===id)){ badges.push({id,title,when:Date.now()}); localStorage.setItem(LS_BADGES, JSON.stringify(badges)); toast(`Badge: ${title}`); } }
+
+    // counter + progress + rare sfx
+    let counter = Number(localStorage.getItem(LS_CLICKS) || 0);
+    function updateProgress(){ const bar = document.getElementById('progressBar'); const pct = Math.min(100, (counter % 50) / 50 * 100); bar.style.width = pct + '%'; }
+    function maybeRareSfx(){ if(counter>0 && counter%20===0){ const rare = choice([document.getElementById('rare1'), document.getElementById('rare2')]); playSound(rare); toast('Secret sound unlocked!'); } }
+
+    // daily challenge
+    const challenges = ["Open 3 web links","Use Shuffle All once","Add 2 custom links","Favorite 1 link","Open 5 links total today"];
+    function dailyKey(){ const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+    function ensureDaily(){ const key = dailyKey(); let data = JSON.parse(localStorage.getItem(LS_DAILY) || '{}'); if(data.key !== key){ data = { key, challenge: choice(challenges), progress: 0, goal: choice([3,5,7]) }; localStorage.setItem(LS_DAILY, JSON.stringify(data)); } return JSON.parse(localStorage.getItem(LS_DAILY) || '{}'); }
+    function maybeDailyProgress(){ let d = ensureDaily(); d.progress++; localStorage.setItem(LS_DAILY, JSON.stringify(d)); if(d.progress >= d.goal){ toast('Daily challenge complete!'); spawnConfetti(); localStorage.removeItem(LS_DAILY); awardBadge('daily','Daily Challenger'); } }
+
+    function incrementCounter(){ counter++; localStorage.setItem(LS_CLICKS, counter); document.getElementById('clickCounter').textContent = counter; updateProgress(); maybeRareSfx(); maybeDailyProgress(); if(counter===50) awardBadge('click50','Link Warrior'); }
+
+    // confetti
+    const confettiCanvas = document.getElementById('confetti'); const cctx = confettiCanvas.getContext('2d'); let confettiParticles = [];
+    function resizeConfetti(){ const d = window.devicePixelRatio || 1; confettiCanvas.width = Math.floor(innerWidth * d); confettiCanvas.height = Math.floor(innerHeight * d); confettiCanvas.style.width = innerWidth + 'px'; confettiCanvas.style.height = innerHeight + 'px'; cctx.setTransform(d,0,0,d,0,0); }
+    resizeConfetti(); window.addEventListener('resize', resizeConfetti);
+    function spawnConfetti(x=innerWidth/2, y=innerHeight/4){ const colors=['#ff6b6b','#ffd86f','#6bffb8','#6bb3ff','#d86bff']; for(let i=0;i<28;i++){ confettiParticles.push({ x:x+(Math.random()-0.5)*200, y:y+(Math.random()-0.5)*80, vx:(Math.random()-0.5)*8, vy:(Math.random()*-6)-2, life:80+Math.random()*40, size:6+Math.random()*8, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360, vr:(Math.random()-0.5)*10 }); } }
+    function confettiLoop(){ cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); for(let i=confettiParticles.length-1;i>=0;i--){ const p = confettiParticles[i]; p.vy += 0.25; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--; cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot*Math.PI/180); cctx.fillStyle = p.color; cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6); cctx.restore(); if(p.y > innerHeight+100 || p.life <= 0) confettiParticles.splice(i,1); } requestAnimationFrame(confettiLoop); }
+    confettiLoop();
+
+    // background blobs (kept from original)
+    const bg = document.getElementById('bgCanvas'); const gctx = bg.getContext('2d'); let blobs = [];
+    function resizeBg(){ const d = window.devicePixelRatio || 1; bg.width = Math.floor(innerWidth*d); bg.height = Math.floor(innerHeight*d); bg.style.width = innerWidth + 'px'; bg.style.height = innerHeight + 'px'; gctx.setTransform(d,0,0,d,0,0); }
+    resizeBg(); window.addEventListener('resize', resizeBg);
+    for(let i=0;i<20;i++) blobs.push({ x: Math.random()*innerWidth, y: Math.random()*innerHeight, r: 30+Math.random()*110, dx: (Math.random()-0.5)*0.3, dy: (Math.random()-0.5)*0.3, h: Math.random()*360 });
+    function drawSoftCircle(x,y,r,h,alpha){ gctx.beginPath(); gctx.fillStyle = `hsla(${h},80%,65%,${alpha})`; gctx.arc(x,y,r,0,Math.PI*2); gctx.fill(); }
+    function bgLoop(){ gctx.clearRect(0,0,bg.width,bg.height); blobs.forEach(b=>{ b.x += b.dx; b.y += b.dy; if(b.x < -200) b.x = bg.width + 200; if(b.x > bg.width + 200) b.x = -200; if(b.y < -200) b.y = bg.height + 200; if(b.y > bg.height + 200) b.y = -200; for(let a=1;a>=0.2;a-=0.12) drawSoftCircle(b.x,b.y,b.r*(a+0.1), b.h, a*0.12); }); requestAnimationFrame(bgLoop); }
+    bgLoop();
+
+    // mascot interactions + chat bubble
+    const mascot = document.getElementById('mascot'); const mascotBubble = document.getElementById('mascotBubble'); let mascotClicks = 0;
+    const mascotLines = ["Hey there!","Wanna spin?","Nice choice!","I like cookies.","Try the roulette!"];
+    mascot.addEventListener('click', ()=>{ mascotClicks++; if(mascotClicks%10===0){ mascot.classList.add('party'); playSound(document.getElementById('specialSound')); spawnConfetti(innerWidth/2, innerHeight/3); toast('Mascot party!'); setTimeout(()=>mascot.classList.remove('party'), 480); } else { cheerMascot(); showBubble(choice(mascotLines)); } });
+    function cheerMascot(){ const old = mascot.textContent; mascot.textContent = '🎉'; setTimeout(()=>mascot.textContent = old, 700); }
+    function showBubble(txt,ms=2200){ mascotBubble.textContent = txt; mascotBubble.style.display='block'; clearTimeout(mascotBubble._t); mascotBubble._t = setTimeout(()=>mascotBubble.style.display='none', ms); }
+
+    // mini timer
+    const miniTimer = document.getElementById('miniTimer'); let lastClickAt = null;
+    function setLastClick(t){ lastClickAt = t ? Number(t) : null; updateMiniTimer(); }
+    function updateMiniTimer(){ if(!lastClickAt){ miniTimer.textContent = 'Last click: --:--:--'; return; } const d = Math.floor((Date.now() - lastClickAt) / 1000); const hh = Math.floor(d/3600); const mm = Math.floor((d%3600)/60); const ss = d%60; miniTimer.textContent = `Last click: ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
+    setInterval(updateMiniTimer, 1000);
+
+    // quotes (simple built-in fallback)
+    const quotes = ["Be yourself; everyone else is already taken.", "Life is what happens when you're busy making other plans.", "You miss 100% of the shots you don't take.", "Simplicity is the soul of efficiency."];
+    async function loadQuote(){ const qb = document.getElementById('quoteBox'); try{ const r = await fetch('https://api.quotable.io/random'); if(r.ok){ const j = await r.json(); qb.textContent = `"${j.content}" — ${j.author}`; return; } }catch(e){} qb.textContent = choice(quotes); }
+    loadQuote(); setInterval(loadQuote, 60*1000);
+
+    // ambient music toggle
+    const ambient = document.getElementById('ambientMusic'); let ambientOn = false;
+    document.getElementById('ambientToggle').addEventListener('click', ()=>{ ambientOn = !ambientOn; if(ambientOn){ playSound(ambient); document.getElementById('ambientToggle').textContent='🔕 Ambient'; } else { ambient.pause(); document.getElementById('ambientToggle').textContent='🎵 Ambient'; } });
+
+    // themes including neon/cyber
+    function applyTheme(name){ document.body.classList.remove('dark-glow'); document.body.classList.remove('glitch'); if(name === 'dark'){ document.documentElement.style.setProperty('--card-bg','rgba(16,16,16,0.9)'); document.documentElement.style.setProperty('--accent','#6bd3ff'); document.body.classList.add('dark-glow'); } else if(name === 'retro'){ document.documentElement.style.setProperty('--card-bg','rgba(255,249,230,0.98)'); document.documentElement.style.setProperty('--accent','#ff6f91'); } else if(name==='neon'){ document.documentElement.style.setProperty('--card-bg','rgba(10,10,20,0.95)'); document.documentElement.style.setProperty('--accent','#ff6bff'); document.body.classList.add('dark-glow'); } else if(name==='cyber'){ document.documentElement.style.setProperty('--card-bg','rgba(5,10,20,0.9)'); document.documentElement.style.setProperty('--accent','#00ffdd'); document.body.classList.add('dark-glow'); } else { document.documentElement.style.setProperty('--card-bg','rgba(255,255,255,0.92)'); document.documentElement.style.setProperty('--accent','#00c3ff'); } }
+
+    // modal helper
+    function openModal(id){ const el = document.getElementById(id); if(el) el.classList.add('open'); }
+    function closeModal(id){ const el = document.getElementById(id); if(el) el.classList.remove('open'); }
+
+    // mini-game (simple bouncing ball) shown when link blocked or failed
+    const miniGameCanvas = document.getElementById('miniGameCanvas'); const mgCtx = miniGameCanvas.getContext('2d'); let mgAnim = null;
+    function startMiniGame(){ openModal('miniGameModal'); let x=50,y=50,vx=2,vy=2,r=12; function loop(){ mgCtx.clearRect(0,0,miniGameCanvas.width,miniGameCanvas.height); mgCtx.fillStyle = '#4fd'; mgCtx.beginPath(); mgCtx.arc(x,y,r,0,Math.PI*2); mgCtx.fill(); x += vx; y += vy; vy += 0.15; if(y > miniGameCanvas.height - r){ y = miniGameCanvas.height - r; vy *= -0.7; } if(x > miniGameCanvas.width - r || x < r) vx *= -1; mgAnim = requestAnimationFrame(loop); } loop(); }
+    function stopMiniGame(){ if(mgAnim) cancelAnimationFrame(mgAnim); closeModal('miniGameModal'); }
+    document.getElementById('closeMiniGame').addEventListener('click', stopMiniGame);
+
+    // roulette (simple)
+    const rouletteArea = document.getElementById('rouletteArea'); document.getElementById('spinBtn').addEventListener('click', ()=>{ const pool = getPool('web').concat(getPool('steam')).concat(getPool('roblox')); let spins=20; const spin=()=>{ rouletteArea.textContent = choice(pool); spins--; if(spins>0) setTimeout(spin,80); else spawnConfetti(); }; spin(); });
+    document.getElementById('closeRoulette').addEventListener('click', ()=>closeModal('rouletteModal'));
+
+    // admin panel wiring
+    document.getElementById('closeAdmin').addEventListener('click', ()=>closeModal('adminModal'));
+
+    // typed commands (partytime, dimc467, debugmode)
+    let typeBuf=''; document.addEventListener('keypress', e=>{ const tag=(document.activeElement||{}).tagName; if(tag==='INPUT'||tag==='TEXTAREA') return; typeBuf += e.key.toLowerCase(); if(typeBuf.length>20) typeBuf = typeBuf.slice(-20); if(typeBuf.endsWith('partytime')){ mascot.classList.add('party'); playSound(document.getElementById('specialSound')); setTimeout(()=>mascot.classList.remove('party'),2400); toast('Party!'); } if(typeBuf.endsWith('dimc467')){ applyDimTheme(); toast('Secret dimension engaged!'); } if(typeBuf.endsWith('debugmode')){ openModal('adminModal'); } });
+
+    function applyDimTheme(){ document.documentElement.style.setProperty('--card-bg','rgba(8,2,20,0.95)'); document.body.style.background = 'radial-gradient(circle at 10% 20%, #120033, #000)'; playSound(document.getElementById('specialSound')); }
+
+    // share/copy/other UI
+    async function safeOpen(url){ try{ const w = window.open(url, '_blank'); if(!w) throw new Error('popup blocked'); return true; } catch(e){ return false; } }
+
+    let lastOpened = null; function recordClickTime(){ localStorage.setItem('rf_last_click', Date.now()); }
+    function spawnAndRecord(url){ spawnConfetti(); mascot.classList.add('party'); setTimeout(()=>mascot.classList.remove('party'), 600); incrementCounter(); lastOpened = url; saveHistory(url); setLastClick(Date.now()); recordClickTime(); }
+
+    // rickroll tracking + dramatic mode
+    let rickrollCount = Number(localStorage.getItem('rf_rr_count')||0);
+    function incrementRickroll(){ rickrollCount++; localStorage.setItem('rf_rr_count', rickrollCount); if(rickrollCount>=3){ // dramatic mode
+        document.body.classList.add('glitch'); playSound(document.getElementById('rare1')); setTimeout(()=>document.body.classList.remove('glitch'),3000); awardBadge('rickdramatic','Dramatic Victim'); rickrollCount=0; localStorage.setItem('rf_rr_count',rickrollCount);
+    } }
+
+    // 1% Rickroll override and MT cameo
+    const rickroll = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    async function triggerOpen(kind){ const pool = getPool(kind); let url = choice(pool); // admin-configurable rick chance
+      const rrChance = (Number(document.getElementById('adminRick')?.value) || adminConfig.rickPercent)/100;
+      if(Math.random() < rrChance) { url = rickroll; incrementRickroll(); }
+      // MT cameo
+      if(Math.random() < adminConfig.mtCameo){ showBubble('MT: Move along...',3000); }
+      // portal animation (brief)
+      await showPortalAnim(); const ok = await safeOpen(url); if(ok){ if(kind==='web') playSound(document.getElementById('clickSound')); if(kind==='steam') playSound(document.getElementById('cashSound')); if(kind==='roblox') playSound(document.getElementById('oofSound')); spawnAndRecord(url); } else { toast('Popup blocked! Launching mini game...'); startMiniGame(); } }
+
+    // portal animation (simple overlay)
+    async function showPortalAnim(){ return new Promise(res=>{ const overlay = document.createElement('div'); overlay.style.position='fixed'; overlay.style.left=0; overlay.style.top=0; overlay.style.width='100%'; overlay.style.height='100%'; overlay.style.zIndex=200; overlay.style.pointerEvents='none'; overlay.style.background='radial-gradient(circle at 50% 30%, rgba(255,255,255,0.3), transparent 20%)'; overlay.style.transition='opacity .6s'; document.body.appendChild(overlay); setTimeout(()=>{ overlay.style.opacity='0'; setTimeout(()=>{ document.body.removeChild(overlay); res(); },600); },600); }); }
+
+    // exposed buttons
+    document.getElementById('webBtn').addEventListener('click', ()=>triggerOpen('web'));
+    document.getElementById('steamBtn').addEventListener('click', ()=>triggerOpen('steam'));
+    document.getElementById('robloxBtn').addEventListener('click', ()=>triggerOpen('roblox'));
+    document.getElementById('shuffleAll').addEventListener('click', ()=>{ triggerOpen('web'); setTimeout(()=>triggerOpen('steam'),600); setTimeout(()=>triggerOpen('roblox'),1200); });
+    document.getElementById('copyBtn').addEventListener('click', async ()=>{ if(!lastOpened){ toast('No link yet'); return; } try{ await safeCopyText(lastOpened); toast('Copied!'); }catch(e){ toast('Could not copy'); } });
+    document.getElementById('favBtn').addEventListener('click', ()=>{ if(lastOpened){ saveFav(lastOpened); toast('Favorited!'); awardBadge('firstfav','First Favorite'); } });
+
+    // history/fav actions
+    document.getElementById('clearHistory').addEventListener('click', ()=>{ localStorage.removeItem(LS_HISTORY); renderHistory(); });
+    document.getElementById('openLast').addEventListener('click', ()=>{ const h = JSON.parse(localStorage.getItem(LS_HISTORY)||'[]')[0]; if(h) window.open(h.url,'_blank'); });
+    document.getElementById('exportFav').addEventListener('click', ()=>{ const f = localStorage.getItem(LS_FAV) || '[]'; safeCopyText(f).then(()=>toast('Favorites copied as JSON')).catch(()=>toast('Could not copy')); });
+    document.getElementById('importFav').addEventListener('click', ()=>{ const txt = prompt('Paste favorites JSON here'); try{ const arr = JSON.parse(txt); if(Array.isArray(arr)) localStorage.setItem(LS_FAV, JSON.stringify(arr)); renderFav(); toast('Imported'); }catch(e){ alert('Invalid JSON'); } });
+
+    // fullscreen/share/random bg/help
+    function toggleFull(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{}); }
+    function doShare(){ if(navigator.share){ navigator.share({ title: document.title, url: location.href }).catch(()=>{}); } else { safeCopyText(location.href).then(()=>toast('URL copied to clipboard')).catch(()=>toast('Could not copy')); } }
+    function randomBGPalette(){ const a=['#ff9a9e','#fad0c4','#fbc2eb','#a6c1ee','#c1ffd7','#ffd1a6']; const b=a.slice().sort(()=>0.5-Math.random()).slice(0,4); document.body.style.background = `linear-gradient(270deg, ${b.join(',')})`; }
+
+    // theme select
+    document.getElementById('themeSelect').addEventListener('change', e=>applyTheme(e.target.value));
+
+    // auto mode
+    let autoTimer = null;
+    document.getElementById('autoToggle').addEventListener('change', e=>{ if(e.target.checked){ clearInterval(autoTimer); const sec = Number(document.getElementById('autoInterval').value) || 8; autoTimer = setInterval(()=>{ const k = ['web','steam','roblox'][Math.floor(Math.random()*3)]; triggerOpen(k); }, sec*1000); } else { clearInterval(autoTimer); autoTimer = null; } });
+
+    // soundboard
+    document.querySelectorAll('.snd').forEach(btn=>{ btn.addEventListener('click', ()=>{ const s = btn.dataset.snd; if(s === 'click') playSound(document.getElementById('clickSound')); if(s === 'cash') playSound(document.getElementById('cashSound')); if(s === 'oof') playSound(document.getElementById('oofSound')); if(s === 'special') playSound(document.getElementById('specialSound')); }); });
+
+    // pools UI
+    document.getElementById('addWeb').addEventListener('click', ()=>{ const v = document.getElementById('customInput').value.trim(); if(v){ pools.web.unshift(v); savePools(); toast('Added to web pool'); document.getElementById('customInput').value=''; } });
+    document.getElementById('addSteam').addEventListener('click', ()=>{ const v = document.getElementById('customInput').value.trim(); if(v){ pools.steam.unshift(v); savePools(); toast('Added to steam pool'); document.getElementById('customInput').value=''; } });
+    document.getElementById('addRoblox').addEventListener('click', ()=>{ const v = document.getElementById('customInput').value.trim(); if(v){ pools.roblox.unshift(v); savePools(); toast('Added to roblox pool'); document.getElementById('customInput').value=''; } });
+    document.getElementById('viewPools').addEventListener('click', ()=>{ openModal('modal'); const m = document.getElementById('modal'); const info = document.createElement('div'); info.style.marginTop='8px'; info.innerHTML = `<strong>Web:</strong><br>${(pools.web.join('<br>')||'(empty)')}<hr><strong>Steam:</strong><br>${(pools.steam.join('<br>')||'(empty)')}<hr><strong>Roblox:</strong><br>${(pools.roblox.join('<br>')||'(empty)')}`; const existing = m.querySelector('.pools-view'); if(existing) existing.remove(); info.className = 'pools-view'; m.querySelector('div').appendChild(info); });
+    document.getElementById('clearPools').addEventListener('click', ()=>{ pools = { web: [], steam: [], roblox: [] }; savePools(); toast('Cleared pools'); });
+
+    // help/randomBg
+    document.getElementById('randomBg').addEventListener('click', randomBGPalette);
+    document.getElementById('helpBtn').addEventListener('click', ()=>openModal('modal'));
+    document.getElementById('closeModal').addEventListener('click', ()=>{ const m = document.getElementById('modal'); m.querySelector('div').innerHTML = `<p>Press the big buttons to open random links. Use Shuffle All to open one of each. You can favorite links, view history and use keyboard shortcuts.</p><p>Auto mode will open a random category at the interval you choose (in seconds). Click the mascot 10x for a secret. Type <code>partytime</code> to spin the mascot.</p>`; closeModal('modal'); });
+
+    // achievements modal
+    document.getElementById('achieveBtn').addEventListener('click', ()=>{ openModal('achieveModal'); const area = document.getElementById('achieveArea'); area.innerHTML = ''; const badges = getBadges(); if(!badges.length) area.textContent='No badges yet.'; badges.forEach(b=>{ const el = document.createElement('div'); el.textContent = `${b.title} — ${new Date(b.when).toLocaleString()}`; area.appendChild(el); }); });
+    document.getElementById('closeAchieve').addEventListener('click', ()=>closeModal('achieveModal'));
+
+    // admin panel open via debugmode or manual
+    document.getElementById('adminRick').addEventListener('change', (e)=>{ adminConfig.rickPercent = Number(e.target.value || 1); });
+    document.getElementById('closeAdmin').addEventListener('click', ()=>closeModal('adminModal'));
+
+    // history/fav render on load
+    renderHistory(); renderFav(); document.getElementById('clickCounter').textContent = counter; updateProgress();
+
+    // toast helper
+    let toastEl = null; function toast(txt, ms=1200){ if(toastEl) document.body.removeChild(toastEl); toastEl = document.createElement('div'); toastEl.style.position='fixed'; toastEl.style.left='50%'; toastEl.style.bottom='8%'; toastEl.style.transform='translateX(-50%)'; toastEl.style.background='rgba(0,0,0,0.8)'; toastEl.style.color='white'; toastEl.style.padding='8px 14px'; toastEl.style.borderRadius='8px'; toastEl.style.zIndex='80'; toastEl.textContent = txt; document.body.appendChild(toastEl); setTimeout(()=>{ if(toastEl){ document.body.removeChild(toastEl); toastEl = null; } }, ms); }
+
+    // daily badge
+    const badge = document.createElement('div'); badge.className = 'konami-badge'; badge.style.fontSize = '13px'; badge.style.cursor = 'pointer'; badge.onclick = ()=>{ const d = ensureDaily(); alert(`Daily: ${d.challenge}
+Progress: ${d.progress}/${d.goal}`); }; document.body.appendChild(badge);
+    function updateBadge(){ const d = ensureDaily(); badge.textContent = `Daily: ${d.challenge} (${d.progress}/${d.goal})`; }
+    setInterval(updateBadge, 2000); updateBadge();
+
+    // Konami and shortcuts
+    const konami = [38,38,40,40,37,39,37,39,66,65]; let konamiBuf = [];
+    document.addEventListener('keydown', e=>{ const tag = (document.activeElement||{}).tagName; if(tag==='INPUT'||tag==='TEXTAREA') return; if(e.key.toLowerCase()==='w') triggerOpen('web'); if(e.key.toLowerCase()==='s') triggerOpen('steam'); if(e.key.toLowerCase()==='r') triggerOpen('roblox'); konamiBuf.push(e.keyCode); if(konamiBuf.length>konami.length) konamiBuf.shift(); if(konamiBuf.join(',') === konami.join(',')){ spawnConfetti(innerWidth/2, innerHeight/2); playSound(document.getElementById('specialSound')); mascot.textContent='💫'; toast('Konami unlocked!'); openModal('pixelModal'); } });
+    document.getElementById('exitPixel').addEventListener('click', ()=>closeModal('pixelModal'));
+
+    // restore last click time
+    setLastClick(localStorage.getItem('rf_last_click') ? Number(localStorage.getItem('rf_last_click')) : null);
+
+    // ensure theme initial state
+    applyTheme(document.getElementById('themeSelect').value);
+
+    // speedrun mode (basic)
+    let speedrunActive=false; let speedrunStart=0; document.getElementById('speedrunBtn').addEventListener('click', ()=>{ if(!speedrunActive){ speedrunActive=true; speedrunStart=Date.now(); toast('Speedrun started — open 10 links!'); document.getElementById('speedrunBtn').textContent='Stop'; window.speedrunCount=0; } else { speedrunActive=false; const time = Math.floor((Date.now()-speedrunStart)/1000); toast(`Speedrun ended: ${window.speedrunCount||0} links in ${time}s`); document.getElementById('speedrunBtn').textContent='⏱ Speedrun'; if((window.speedrunCount||0)>=10) awardBadge('speedrun','Speedrunner'); } });
+
+    // roulette open
+    document.getElementById('rouletteBtn').addEventListener('click', ()=>openModal('rouletteModal'));
+
+    // friend code (local) quick generator
+    function getFriendCode(){ let code = localStorage.getItem('rf_friend') || null; if(!code){ code = Math.random().toString(36).slice(2,9).toUpperCase(); localStorage.setItem('rf_friend', code); } return code; }
+
+    // restore admin inputs default
+    const adminRickInput = document.getElementById('adminRick'); if(adminRickInput) adminRickInput.value = adminConfig.rickPercent;
+
+    // final set
+    window.addEventListener('beforeunload', ()=>{ localStorage.setItem(LS_CLICKS, counter); });
+  });
+})();
 </script>
 </body>
 </html>
